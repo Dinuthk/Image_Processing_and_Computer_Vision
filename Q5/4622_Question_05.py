@@ -3,9 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-# ----------------------------
-# Config
-# ----------------------------
 IMG1_PATH = "../images/Image_1.jpg"
 IMG2_PATH = "../images/Image_2.jpg"
 IMG3_PATH = "../images/Image_3.jpg"
@@ -19,9 +16,6 @@ SAVE_DIR = "results"
 SAVE_NAME = "Q5_result_image_5.png"
 DPI = 150
 
-# ----------------------------
-# Helpers
-# ----------------------------
 def read_rgb(path: str):
     img = cv2.imread(path)
     if img is None:
@@ -48,19 +42,11 @@ def manual_gaussian_filter(img, k, sigma=0):
     return cv2.filter2D(img, -1, kernel)
 
 def manual_median_filter_fast(img, k):
-    """
-    Manual median filter but faster:
-    - pads
-    - processes each channel separately
-    - uses sliding window view
-    - computes median over (k*k) window
-    """
     if k % 2 == 0:
         raise ValueError("Median kernel size must be odd.")
 
     pad = k // 2
     
-    # Handle single channel and multi-channel images
     if len(img.shape) == 2:
         channels = [img]
     else:
@@ -70,10 +56,8 @@ def manual_median_filter_fast(img, k):
     for channel in channels:
         padded = cv2.copyMakeBorder(channel, pad, pad, pad, pad, cv2.BORDER_REPLICATE)
         
-        # sliding window view on 2D channel: (H, W, k, k)
         windows = np.lib.stride_tricks.sliding_window_view(padded, (k, k), axis=(0, 1))
         
-        # median over kxk for each pixel
         filtered = np.median(windows, axis=(2, 3)).astype(channel.dtype)
         out_channels.append(filtered)
     
@@ -100,9 +84,6 @@ def show_grid(rows, cols, images, titles, cmap_list=None, facecolor="black"):
     plt.tight_layout()
     return fig
 
-# ----------------------------
-# Main
-# ----------------------------
 try:
     img1 = read_rgb(IMG1_PATH)
     img2 = read_rgb(IMG2_PATH)
@@ -111,12 +92,10 @@ except FileNotFoundError as e:
     print(e)
     raise SystemExit(1)
 
-# Q1: Average filter
 out1_A = manual_average_filter(img1, AVG_K)
 out1_B = cv2.blur(img1, (AVG_K, AVG_K))
 diff1 = get_difference(out1_A, out1_B)
 
-# Q2: Median filter (use smaller image for speed, same as your idea)
 img2_small = resize_percent(img2, IMG2_SCALE_PERCENT)
 
 print("Processing Manual Median Filter (fast version)...")
@@ -124,12 +103,10 @@ out2_A = manual_median_filter_fast(img2_small, MED_K)
 out2_B = cv2.medianBlur(img2_small, MED_K)
 diff2 = get_difference(out2_A, out2_B)
 
-# Q3: Gaussian filter
 out3_A = manual_gaussian_filter(img3, GAUSS_K, sigma=0)
 out3_B = cv2.GaussianBlur(img3, (GAUSS_K, GAUSS_K), 0)
 diff3 = get_difference(out3_A, out3_B)
 
-# Plot grid
 images = [
     out1_A, out1_B, diff1,
     out2_A, out2_B, diff2,
@@ -144,7 +121,6 @@ cmap_list = [None, None, "gray", None, None, "gray", None, None, "gray"]
 
 fig = show_grid(3, 3, images, titles, cmap_list=cmap_list, facecolor="black")
 
-# Save
 os.makedirs(SAVE_DIR, exist_ok=True)
 save_path = os.path.join(SAVE_DIR, SAVE_NAME)
 plt.savefig(save_path, dpi=DPI, bbox_inches="tight", facecolor=fig.get_facecolor())
